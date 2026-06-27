@@ -12,6 +12,13 @@ class Ticket extends Model
     /** @use HasFactory<\Database\Factories\TicketFactory> */
     use HasFactory;
 
+    protected $fillable = [
+        'title',
+        'description',
+        'status',
+        'user_id',
+    ];
+
 
     // when a belongsTo method is could it would assume the foreign key 
     // is the function name + "_id" so this would be "auther_id" but since 

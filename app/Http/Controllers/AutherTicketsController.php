@@ -2,16 +2,52 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Api\V1\ApiController;
 use App\Http\Filters\V1\TicketFilter;
+use App\Http\Requests\Api\V1\StoreTicketRequest;
 use App\Http\Resources\V1\TicketResource;
 use App\Models\Ticket;
-use Illuminate\Http\Request;
+use App\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
-class AutherTicketsController extends Controller
+class AutherTicketsController extends ApiController
 {
     // since the created route is '/authers/{auther}/tickets' we could use '$auther_id' to grap the 
     // {auther} from the url.
     public function index($auther_id, TicketFilter $filters){
         return TicketResource::collection(Ticket::query()->where('user_id', $auther_id)->filter($filters)->paginate());
+    }
+
+    public function store($auther_id, StoreTicketRequest $request){
+        try{
+            $user = User::findOrFail($auther_id);
+        } catch(ModelNotFoundException $exception){
+            return $this->ok('user not found', [
+                'error' => 'the provided user id does not match'
+            ]);
+        }
+
+        $model = [
+            'title' => $request->input('data.attributes.title'),
+            'description' => $request->input('data.attributes.description'),
+            'status' => $request->input('data.attributes.status'),
+            'user_id' => $auther_id,
+        ];
+
+        return Ticket::create($model);
+    }
+
+    public function destroy($auther_id, $ticket_id){
+        try{
+            $ticket = Ticket::findOrFail($ticket_id);
+            if($ticket->user_id == $auther_id){
+                $ticket->delete();
+                return $this->ok('deleted');
+            }
+            return $this->ok('ticket not found');
+            
+        }catch(ModelNotFoundException $exception){
+            return $this->ok('ticket not found');
+        }
     }
 }
