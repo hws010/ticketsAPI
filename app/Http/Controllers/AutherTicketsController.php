@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Api\V1\ApiController;
 use App\Http\Filters\V1\TicketFilter;
+use App\Http\Requests\Api\V1\ReplaceTicketRequest;
 use App\Http\Requests\Api\V1\StoreTicketRequest;
+use App\Http\Requests\Api\V1\UpdateTicketRequest;
 use App\Http\Resources\V1\TicketResource;
 use App\Models\Ticket;
 use App\Models\User;
@@ -27,16 +29,47 @@ class AutherTicketsController extends ApiController
             ]);
         }
 
-        $model = [
-            'title' => $request->input('data.attributes.title'),
-            'description' => $request->input('data.attributes.description'),
-            'status' => $request->input('data.attributes.status'),
-            'user_id' => $auther_id,
-        ];
-
-        return Ticket::create($model);
+        return Ticket::create($request->mappedAttributes());
     }
 
+    public function update(UpdateTicketRequest $request, $auther_id, $ticket_id)
+    {
+        // PUT
+        try{
+            $ticket = Ticket::findOrFail($ticket_id);
+            
+            if($ticket->user_id == $auther_id){
+    
+                $ticket->update($request->mappedAttributes());
+    
+                return new TicketResource($ticket);
+            }
+            return $this->error('ticket not found', 404);
+
+        }catch(ModelNotFoundException $exception){
+            return $this->error('ticket not found', 404);
+        }
+    }
+
+    public function replace(ReplaceTicketRequest $request, $auther_id, $ticket_id)
+    {
+        // PUT
+        try{
+            $ticket = Ticket::findOrFail($ticket_id);
+            
+            if($ticket->user_id == $auther_id){
+    
+                $ticket->update($request->mappedAttributes());
+    
+                return new TicketResource($ticket);
+            }
+            return $this->error('ticket not found', 404);
+
+        }catch(ModelNotFoundException $exception){
+            return $this->error('ticket not found', 404);
+        }
+    }
+    
     public function destroy($auther_id, $ticket_id){
         try{
             $ticket = Ticket::findOrFail($ticket_id);
@@ -44,10 +77,10 @@ class AutherTicketsController extends ApiController
                 $ticket->delete();
                 return $this->ok('deleted');
             }
-            return $this->ok('ticket not found');
+            return $this->error('ticket not found', 404);
             
         }catch(ModelNotFoundException $exception){
-            return $this->ok('ticket not found');
+            return $this->error('ticket not found', 404);
         }
     }
 }
