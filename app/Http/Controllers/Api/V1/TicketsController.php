@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Filters\V1\TicketFilter;
+use App\Http\Requests\Api\V1\ReplaceTicketRequest;
 use App\Http\Requests\Api\V1\StoreTicketRequest;
 use App\Http\Requests\Api\V1\UpdateTicketRequest;
 use App\Http\Resources\V1\TicketResource;
@@ -37,14 +38,7 @@ class TicketsController extends ApiController
             ]);
         }
 
-        $model = [
-            'title' => $request->input('data.attributes.title'),
-            'description' => $request->input('data.attributes.description'),
-            'status' => $request->input('data.attributes.status'),
-            'user_id' => $request->input('data.relationships.auther.data.id'),
-        ];
-
-        return new TicketResource(Ticket::create($model));
+        return new TicketResource($request->mappedAttributes());
 
         //return $this->success('created', $model, 201);
     }
@@ -70,9 +64,32 @@ class TicketsController extends ApiController
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateTicketRequest $request, Ticket $ticket)
+    public function update(UpdateTicketRequest $request, $ticket_id)
     {
-        //
+        // PATCH
+        try{
+            $ticket = Ticket::findOrFail($ticket_id);
+
+            $ticket->update($request->mappedAttributes());
+
+            return new TicketResource($ticket);
+        }catch(ModelNotFoundException $exception){
+            return $this->error('ticket not found', 404);
+        }
+    }
+
+    public function replace(ReplaceTicketRequest $request, $ticket_id)
+    {
+        // PUT
+        try{
+            $ticket = Ticket::findOrFail($ticket_id);
+
+            $ticket->update($request->mappedAttributes());
+
+            return new TicketResource($ticket);
+        }catch(ModelNotFoundException $exception){
+            return $this->error('ticket not found', 404);
+        }
     }
 
     /**
